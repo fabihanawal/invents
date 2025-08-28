@@ -1,0 +1,648 @@
+<!doctype html>
+<html lang="bn">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Sujon Square - বিক্রয় ও স্টক ম্যানেজার</title>
+  <!-- Bootstrap 5 CDN -->
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+  <style>
+    :root {
+      --brand:#0d6efd;
+      --accent:#198754;
+    }
+    body { background:#f7f9fc; }
+    .app-header { background:linear-gradient(90deg,#0d6efd22,#19875422); padding:18px; border-radius:8px; margin-bottom:16px;}
+    .card { box-shadow: 0 6px 18px rgba(15,23,42,0.06); }
+    .small-muted { font-size:0.85rem; color:#6b7280; }
+    .table-wrap { max-height:420px; overflow:auto; }
+    .required { color: #d63384; }
+    footer { font-size:0.85rem; color:#6c757d; margin-top:18px; }
+  </style>
+</head>
+<body>
+<div class="container py-3">
+
+  <div class="app-header d-flex justify-content-between align-items-center">
+    <div>
+      <h3 class="mb-0">Sujon Square — ব্যবসা ম্যানেজার</h3>
+      <div class="small-muted">পাইকারি → খুচরা | বদরগাছি ইউনিয়ন</div>
+    </div>
+    <div class="text-end">
+      <div class="small-muted">ব্যবহারকারী: সুজন স্কয়ার</div>
+      <div id="clock" class="fw-bold"></div>
+    </div>
+  </div>
+
+  <div class="row g-3">
+    <!-- Left column: Forms -->
+    <div class="col-lg-4">
+      <!-- Add/Edit Product -->
+      <div class="card p-3 mb-3">
+        <h5 class="mb-2">নতুন পণ্য যোগ / সম্পাদনা</h5>
+        <form id="productForm">
+          <input type="hidden" id="product_id" />
+          <div class="mb-2">
+            <label class="form-label">পণ্যের নাম <span class="required">*</span></label>
+            <input id="product_name" class="form-control" required />
+          </div>
+          <div class="mb-2">
+            <label class="form-label">ক্যাটাগরি</label>
+            <input id="product_category" class="form-control" placeholder="বিস্কুট / পাউরুটি / সেমাই..." />
+          </div>
+          <div class="row">
+            <div class="col-6 mb-2">
+              <label class="form-label">স্টক পরিমাণ</label>
+              <input id="product_stock" type="number" class="form-control" value="0" min="0" />
+            </div>
+            <div class="col-6 mb-2">
+              <label class="form-label">একাই মূল্যে (টাকা)</label>
+              <input id="product_price" type="number" class="form-control" value="0" min="0" />
+            </div>
+          </div>
+          <div class="mb-2">
+            <label class="form-label">নোট</label>
+            <input id="product_note" class="form-control" placeholder="ঐচ্ছিক" />
+          </div>
+          <div class="d-flex gap-2">
+            <button class="btn btn-primary" id="saveProductBtn">সংরক্ষণ</button>
+            <button type="button" class="btn btn-outline-secondary" id="resetProductBtn">রিসেট</button>
+          </div>
+        </form>
+      </div>
+
+      <!-- Record Transaction (Purchase / Sale) -->
+      <div class="card p-3 mb-3">
+        <h5 class="mb-2">ক্রয় / বিক্রয় রেকর্ড</h5>
+        <form id="txnForm">
+          <div class="mb-2">
+            <label class="form-label">টাইপ</label>
+            <select id="txn_type" class="form-select">
+              <option value="purchase">Purchase (ক্রয়)</option>
+              <option value="sale" selected>Sale (বিক্রয়)</option>
+            </select>
+          </div>
+          <div class="mb-2">
+            <label class="form-label">পণ্য</label>
+            <select id="txn_product" class="form-select"></select>
+          </div>
+          <div class="row">
+            <div class="col-4 mb-2">
+              <label class="form-label">পরিমাণ</label>
+              <input id="txn_qty" type="number" class="form-control" value="1" min="1"/>
+            </div>
+            <div class="col-4 mb-2">
+              <label class="form-label">একাই মূল্যে</label>
+              <input id="txn_unit" type="number" class="form-control" value="0" min="0" />
+            </div>
+            <div class="col-4 mb-2">
+              <label class="form-label">মোট</label>
+              <input id="txn_total" type="number" class="form-control" value="0" readonly />
+            </div>
+          </div>
+          <div class="mb-2">
+            <label class="form-label">তারিখ</label>
+            <input id="txn_date" type="date" class="form-control" />
+          </div>
+          <div class="mb-2">
+            <label class="form-label">নোট</label>
+            <input id="txn_note" class="form-control" />
+          </div>
+          <div class="d-flex gap-2">
+            <button class="btn btn-success" id="saveTxnBtn">রেকর্ড করুন</button>
+            <button type="button" class="btn btn-outline-secondary" id="resetTxnBtn">রিসেট</button>
+          </div>
+        </form>
+      </div>
+
+      <!-- Return / Expiry -->
+      <div class="card p-3 mb-3">
+        <h5 class="mb-2">ফেরত / এক্সপায়ারি</h5>
+        <form id="returnForm">
+          <div class="mb-2">
+            <label class="form-label">পণ্য</label>
+            <select id="return_product" class="form-select"></select>
+          </div>
+          <div class="row">
+            <div class="col-6 mb-2">
+              <label class="form-label">পরিমাণ</label>
+              <input id="return_qty" type="number" class="form-control" value="1" min="1"/>
+            </div>
+            <div class="col-6 mb-2">
+              <label class="form-label">কারণ</label>
+              <input id="return_reason" class="form-control" placeholder="ব্যবহার, এক্সপায়ার, ড্যামেজ..." />
+            </div>
+          </div>
+          <div class="d-flex gap-2">
+            <button class="btn btn-warning" id="saveReturnBtn">ফেরত রেকর্ড</button>
+            <button type="button" class="btn btn-outline-danger" id="markExpiryBtn">এক্সপায়ারি হিসেবে চিহ্নিত</button>
+          </div>
+        </form>
+      </div>
+
+    </div>
+
+    <!-- Right column: Lists and Reports -->
+    <div class="col-lg-8">
+      <div class="row g-3">
+        <div class="col-12">
+          <div class="card p-3">
+            <div class="d-flex justify-content-between align-items-center mb-2">
+              <h5 class="mb-0">স্টক তালিকা</h5>
+              <div>
+                <button class="btn btn-outline-primary btn-sm" id="refreshBtn">Refresh</button>
+                <button class="btn btn-outline-secondary btn-sm" id="exportBtn">Export CSV</button>
+              </div>
+            </div>
+            <div class="table-wrap">
+              <table class="table table-hover table-sm" id="productsTable">
+                <thead class="table-light">
+                  <tr>
+                    <th>পণ্য</th><th>ক্যাটাগরি</th><th>স্টক</th><th>মূল্য (টাকা)</th><th>নোট</th><th>কার্য</th>
+                  </tr>
+                </thead>
+                <tbody></tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+
+        <!-- Transactions quick view -->
+        <div class="col-md-6">
+          <div class="card p-3">
+            <h6>সাম্প্রতিক লেনদেন (10)</h6>
+            <div class="table-wrap" style="max-height:240px; overflow:auto;">
+              <table class="table table-sm" id="txnsTable">
+                <thead><tr><th>টাইপ</th><th>পণ্য</th><th>qty</th><th>মোট</th><th>তারিখ</th></tr></thead>
+                <tbody></tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+
+        <!-- Expiry & Returns quick -->
+        <div class="col-md-6">
+          <div class="card p-3">
+            <h6>ফেরত / এক্সপায়ারি (সাম্প্রতিক)</h6>
+            <div class="table-wrap" style="max-height:240px; overflow:auto;">
+              <table class="table table-sm" id="returnsTable">
+                <thead><tr><th>পণ্য</th><th>qty</th><th>কারণ</th><th>তারিখ</th></tr></thead>
+                <tbody></tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+
+        <!-- Vehicle log -->
+        <div class="col-12">
+          <div class="card p-3">
+            <h6>থ্রি-হুইলার লগ</h6>
+            <form id="vehicleForm" class="row g-2 align-items-end mb-2">
+              <div class="col-md-3">
+                <label class="form-label">তারিখ</label>
+                <input id="veh_date" type="date" class="form-control" />
+              </div>
+              <div class="col-md-3">
+                <label class="form-label">ড্রাইভার</label>
+                <input id="veh_driver" class="form-control" placeholder="নাম" />
+              </div>
+              <div class="col-md-2">
+                <label class="form-label">শুরু মিটার</label>
+                <input id="veh_start" type="number" class="form-control" />
+              </div>
+              <div class="col-md-2">
+                <label class="form-label">শেষ মিটার</label>
+                <input id="veh_end" type="number" class="form-control" />
+              </div>
+              <div class="col-md-2">
+                <button class="btn btn-outline-primary w-100" id="saveVehBtn">লগ সংরক্ষণ</button>
+              </div>
+              <div class="col-12">
+                <input id="veh_purpose" class="form-control" placeholder="উদ্দেশ্য (ডিস্ট্রিবিউশন / পিকআপ...)" />
+              </div>
+            </form>
+            <div class="table-wrap" style="max-height:200px; overflow:auto;">
+              <table class="table table-sm" id="vehTable">
+                <thead><tr><th>তারিখ</th><th>ড্রাইভার</th><th>কিমি</th><th>উদ্দেশ্য</th></tr></thead>
+                <tbody></tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+
+      </div> <!-- inner row -->
+    </div>
+  </div>
+
+  <footer class="text-center small-muted">
+    Designed for Sujon Square • Data stored on Google Sheets via SheetDB. <br>
+    নির্দেশ — SheetDB এ base URL ঠিক করে নেবে; সিকিউরিটি: API key গোপন রাখো।
+  </footer>
+</div>
+
+<!-- Bootstrap JS & Popper -->
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+
+<script>
+/*
+  CONFIG: Replace this with your SheetDB base URL (no trailing slash).
+  Example: const SHEETDB_BASE = 'https://sheetdb.io/api/v1/abcd1234';
+*/
+const SHEETDB_BASE = 'https://sheetdb.io/api/v1/YOUR_SHEETDB_ID';
+
+/* Helper to build sheet-specific endpoint */
+function sheetUrl(sheet) {
+  // SheetDB allows query like /sheetName or ?sheet=name
+  // We'll use /sheetName approach if available.
+  return `${SHEETDB_BASE}/${sheet}`;
+}
+
+/* Utility: friendly date */
+function todayISO() {
+  const d = new Date();
+  const off = d.getTimezoneOffset();
+  d.setMinutes(d.getMinutes() - off);
+  return d.toISOString().slice(0,10);
+}
+
+/* Clock */
+function startClock() {
+  const el = document.getElementById('clock');
+  function tick() {
+    const now = new Date();
+    el.textContent = now.toLocaleString('bn-BD');
+  }
+  tick(); setInterval(tick, 1000);
+}
+
+/* --- Fetch wrapper with basic error handling --- */
+async function apiFetch(url, opts = {}) {
+  try {
+    const res = await fetch(url, opts);
+    if (!res.ok) {
+      const txt = await res.text().catch(()=>res.statusText);
+      throw new Error('API error: ' + res.status + ' — ' + txt);
+    }
+    // SheetDB returns JSON for GET. For POST/PUT may return created object or message.
+    const ct = res.headers.get('content-type') || '';
+    if (ct.includes('application/json')) return res.json();
+    return res.text();
+  } catch (err) {
+    console.error('Fetch error', err);
+    alert('সার্ভার-ত্রুটি: ' + err.message);
+    throw err;
+  }
+}
+
+/* --- App State --- */
+let PRODUCTS = []; // cached products
+
+/* --- Initialization --- */
+async function init() {
+  startClock();
+  document.getElementById('txn_date').value = todayISO();
+  document.getElementById('veh_date').value = todayISO();
+  bindForms();
+  await loadProducts();
+  await loadRecentTransactions();
+  await loadReturns();
+  await loadVehicleLog();
+}
+
+/* --- Load products from Google Sheet via SheetDB --- */
+async function loadProducts() {
+  try {
+    const url = sheetUrl('products') + '?_sort=product_name';
+    const data = await apiFetch(url);
+    // SheetDB returns array of objects; ensure numeric fields converted
+    PRODUCTS = (data || []).map(p => ({
+      id: p.id || p.product_id || (p._id || ''),
+      product_name: p.product_name || '',
+      product_category: p.product_category || '',
+      product_stock: Number(p.product_stock||0),
+      product_price: Number(p.product_price||0),
+      product_note: p.product_note || ''
+    }));
+    renderProducts();
+    populateSelects();
+  } catch (e) {
+    console.warn('Could not load products', e);
+  }
+}
+
+/* --- Render products table --- */
+function renderProducts() {
+  const tbody = document.querySelector('#productsTable tbody');
+  tbody.innerHTML = '';
+  PRODUCTS.forEach(p => {
+    const tr = document.createElement('tr');
+    tr.innerHTML = `
+      <td>${escapeHtml(p.product_name)}</td>
+      <td>${escapeHtml(p.product_category)}</td>
+      <td>${p.product_stock}</td>
+      <td>${numberFormat(p.product_price)}</td>
+      <td>${escapeHtml(p.product_note)}</td>
+      <td>
+        <button class="btn btn-sm btn-outline-secondary me-1" onclick="editProduct('${encodeURIComponent(p.id)}')">Edit</button>
+        <button class="btn btn-sm btn-danger" onclick="deleteProduct('${encodeURIComponent(p.id)}')">Delete</button>
+      </td>
+    `;
+    tbody.appendChild(tr);
+  });
+}
+
+/* --- Populate selects that need product list --- */
+function populateSelects() {
+  const selIds = ['txn_product','return_product'];
+  selIds.forEach(id => {
+    const sel = document.getElementById(id);
+    if (!sel) return;
+    sel.innerHTML = PRODUCTS.map(p => `<option value="${escapeHtml(p.id)}">${escapeHtml(p.product_name)} (${p.product_stock})</option>`).join('');
+  });
+}
+
+/* --- Edit product (populate form) --- */
+function editProduct(idEncoded) {
+  const id = decodeURIComponent(idEncoded);
+  const p = PRODUCTS.find(x => String(x.id) === String(id));
+  if (!p) return alert('পণ্য পাওয়া যায়নি।');
+  document.getElementById('product_id').value = p.id;
+  document.getElementById('product_name').value = p.product_name;
+  document.getElementById('product_category').value = p.product_category;
+  document.getElementById('product_stock').value = p.product_stock;
+  document.getElementById('product_price').value = p.product_price;
+  document.getElementById('product_note').value = p.product_note;
+  window.scrollTo({top:0, behavior:'smooth'});
+}
+
+/* --- Delete product --- */
+async function deleteProduct(idEncoded) {
+  if (!confirm('পণ্যটি মুছতে চান? ধ্যান: মুছে গেলে লেনদেন নষ্ট হতে পারে।')) return;
+  const id = decodeURIComponent(idEncoded);
+  // SheetDB supports DELETE with query param; many configurations possible.
+  // We'll try: DELETE /products/{id} or ?id={id}
+  try {
+    const url = sheetUrl('products') + `/${id}`;
+    await apiFetch(url, { method: 'DELETE' });
+    alert('মুছে ফেলা হয়েছে');
+    await loadProducts();
+  } catch (err) {
+    // fallback: try query param
+    try {
+      const url2 = sheetUrl('products') + `?id=${encodeURIComponent(id)}`;
+      await apiFetch(url2, { method: 'DELETE' });
+      await loadProducts();
+    } catch (e) {
+      alert('মুছতে সমস্যা: ' + e.message);
+    }
+  }
+}
+
+/* --- Save product (create or update) --- */
+async function saveProduct(ev) {
+  ev.preventDefault();
+  const id = document.getElementById('product_id').value.trim();
+  const payload = {
+    product_name: document.getElementById('product_name').value.trim(),
+    product_category: document.getElementById('product_category').value.trim(),
+    product_stock: Number(document.getElementById('product_stock').value || 0),
+    product_price: Number(document.getElementById('product_price').value || 0),
+    product_note: document.getElementById('product_note').value.trim()
+  };
+  if (!payload.product_name) return alert('পণ্যের নাম দরকার।');
+  try {
+    if (id) {
+      // Update: SheetDB supports PUT /sheet/{id} with JSON
+      const url = sheetUrl('products') + `/${id}`;
+      await apiFetch(url, { method:'PUT', headers:{'Content-Type':'application/json'}, body: JSON.stringify({data: [payload]})});
+      alert('আপডেট সম্পন্ন');
+    } else {
+      // Create: POST /products with data array
+      const url = sheetUrl('products');
+      await apiFetch(url, { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({data: [payload]})});
+      alert('পণ্য যোগ করা হয়েছে');
+    }
+    document.getElementById('productForm').reset();
+    await loadProducts();
+  } catch (e) {
+    console.error(e);
+  }
+}
+
+/* --- Bind form events --- */
+function bindForms() {
+  document.getElementById('productForm').addEventListener('submit', saveProduct);
+  document.getElementById('resetProductBtn').addEventListener('click', ()=>document.getElementById('productForm').reset());
+
+  // transaction calculations
+  const qtyEl = document.getElementById('txn_qty');
+  const unitEl = document.getElementById('txn_unit');
+  function recalcTxn() {
+    const q = Number(qtyEl.value || 0);
+    const u = Number(unitEl.value || 0);
+    document.getElementById('txn_total').value = (q * u).toFixed(2);
+  }
+  qtyEl.addEventListener('input', recalcTxn);
+  unitEl.addEventListener('input', recalcTxn);
+  document.getElementById('txnForm').addEventListener('submit', saveTransaction);
+  document.getElementById('resetTxnBtn').addEventListener('click', ()=>document.getElementById('txnForm').reset());
+
+  // returns
+  document.getElementById('returnForm').addEventListener('submit', saveReturn);
+  document.getElementById('markExpiryBtn').addEventListener('click', markAsExpired);
+
+  // refresh / export
+  document.getElementById('refreshBtn').addEventListener('click', async ()=>{
+    await loadProducts(); await loadRecentTransactions(); await loadReturns();
+  });
+  document.getElementById('exportBtn').addEventListener('click', exportCsv);
+
+  // vehicle
+  document.getElementById('vehicleForm').addEventListener('submit', saveVehicleLog);
+  document.getElementById('saveVehBtn').addEventListener('click', (e)=>{ e.preventDefault(); saveVehicleLog(); });
+}
+
+/* --- Transactions: save purchase or sale --- */
+async function saveTransaction(ev) {
+  ev?.preventDefault();
+  const type = document.getElementById('txn_type').value;
+  const productId = document.getElementById('txn_product').value;
+  const product = PRODUCTS.find(p => String(p.id) === String(productId));
+  if (!product) return alert('পণ্য সিলেক্ট করুন।');
+  const qty = Number(document.getElementById('txn_qty').value || 0);
+  const unit = Number(document.getElementById('txn_unit').value || 0);
+  const total = Number(document.getElementById('txn_total').value || (qty*unit));
+  const date = document.getElementById('txn_date').value || todayISO();
+  const note = document.getElementById('txn_note').value || '';
+
+  if (!qty || qty <= 0) return alert('পরিমাণ ১ বা তার বেশি দিন।');
+
+  const txn = {
+    type, product_id: productId, product_name: product.product_name,
+    qty, unit_price: unit, total, date, note
+  };
+
+  try {
+    // create transaction
+    const url = sheetUrl('transactions');
+    await apiFetch(url, { method: 'POST', headers: {'Content-Type':'application/json'}, body: JSON.stringify({data:[txn]}) });
+
+    // update product stock: increase on purchase, decrease on sale
+    const newStock = type === 'purchase' ? (product.product_stock + qty) : (product.product_stock - qty);
+    // Update product row
+    const prodPayload = Object.assign({}, product, { product_stock: Number(newStock) });
+    // PUT to /products/{id}
+    const prodUrl = sheetUrl('products') + `/${product.id}`;
+    await apiFetch(prodUrl, { method:'PUT', headers:{'Content-Type':'application/json'}, body: JSON.stringify({data:[prodPayload]}) });
+
+    alert('লেনদেন সংরক্ষিত হয়েছে');
+    document.getElementById('txnForm').reset();
+    document.getElementById('txn_date').value = todayISO();
+    await loadProducts();
+    await loadRecentTransactions();
+  } catch (e) {
+    console.error(e);
+  }
+}
+
+/* --- Load recent transactions --- */
+async function loadRecentTransactions() {
+  try {
+    const url = sheetUrl('transactions') + '?_sort=-date&_limit=10';
+    const data = await apiFetch(url);
+    const tbody = document.querySelector('#txnsTable tbody');
+    tbody.innerHTML = '';
+    (data || []).forEach(t => {
+      const tr = document.createElement('tr');
+      tr.innerHTML = `<td>${escapeHtml(t.type)}</td>
+                      <td>${escapeHtml(t.product_name)}</td>
+                      <td>${Number(t.qty)}</td>
+                      <td>${numberFormat(Number(t.total)||0)}</td>
+                      <td>${escapeHtml(t.date)}</td>`;
+      tbody.appendChild(tr);
+    });
+  } catch (e) { console.warn('txns load failed', e); }
+}
+
+/* --- Save Return --- */
+async function saveReturn(ev) {
+  ev?.preventDefault();
+  const productId = document.getElementById('return_product').value;
+  const product = PRODUCTS.find(p => String(p.id) === String(productId));
+  if (!product) return alert('পণ্য সিলেক্ট করুন।');
+  const qty = Number(document.getElementById('return_qty').value || 0);
+  const reason = document.getElementById('return_reason').value || '';
+  if (!qty || qty <= 0) return alert('পরিমাণ সঠিক করুন।');
+
+  const item = { product_id: productId, product_name: product.product_name, qty, reason, date: todayISO() };
+  try {
+    await apiFetch(sheetUrl('returns'), { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({data:[item]}) });
+    // deduct stock
+    const newStock = Math.max(0, product.product_stock - qty);
+    const prodPayload = Object.assign({}, product, { product_stock: Number(newStock) });
+    await apiFetch(sheetUrl('products') + `/${product.id}`, { method:'PUT', headers:{'Content-Type':'application/json'}, body: JSON.stringify({data:[prodPayload]})});
+    alert('ফেরত রেকর্ড হয়েছে');
+    document.getElementById('returnForm').reset();
+    await loadProducts();
+    await loadReturns();
+  } catch (e) {
+    console.error(e);
+  }
+}
+
+/* --- Mark as expired --- */
+async function markAsExpired() {
+  const productId = document.getElementById('return_product').value;
+  const product = PRODUCTS.find(p => String(p.id) === String(productId));
+  if (!product) return alert('পণ্য সিলেক্ট করুন।');
+  const qty = Number(document.getElementById('return_qty').value || 0);
+  if (!qty || qty <= 0) return alert('পরিমাণ সঠিক করুন।');
+  const rec = { product_id: productId, product_name: product.product_name, qty, expiry_date: todayISO(), noted_date: todayISO() };
+  try {
+    await apiFetch(sheetUrl('expiries'), { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({data:[rec]})});
+    // deduct stock
+    const newStock = Math.max(0, product.product_stock - qty);
+    const prodPayload = Object.assign({}, product, { product_stock: Number(newStock) });
+    await apiFetch(sheetUrl('products') + `/${product.id}`, { method:'PUT', headers:{'Content-Type':'application/json'}, body: JSON.stringify({data:[prodPayload]})});
+    alert('এক্সপায়ারি হিসেবে চিহ্নিত করা হয়েছে');
+    await loadProducts();
+    await loadReturns();
+  } catch (e) { console.error(e); }
+}
+
+/* --- Load returns / expiries recent --- */
+async function loadReturns() {
+  try {
+    const data = await apiFetch(sheetUrl('returns') + '?_sort=-date&_limit=10');
+    const tbody = document.querySelector('#returnsTable tbody');
+    tbody.innerHTML = '';
+    (data || []).forEach(r => {
+      const tr = document.createElement('tr');
+      tr.innerHTML = `<td>${escapeHtml(r.product_name)}</td><td>${Number(r.qty)}</td><td>${escapeHtml(r.reason)}</td><td>${escapeHtml(r.date)}</td>`;
+      tbody.appendChild(tr);
+    });
+  } catch (e) { console.warn(e); }
+}
+
+/* --- Vehicle log save & load --- */
+async function saveVehicleLog(ev){
+  ev?.preventDefault();
+  const date = document.getElementById('veh_date').value || todayISO();
+  const driver = document.getElementById('veh_driver').value || 'ড্রাইভার';
+  const start = Number(document.getElementById('veh_start').value || 0);
+  const end = Number(document.getElementById('veh_end').value || 0);
+  const kms = Math.max(0, end - start);
+  const purpose = document.getElementById('veh_purpose').value || '';
+  const rec = { date, driver, start_meter: start, end_meter: end, kms, purpose };
+  try {
+    await apiFetch(sheetUrl('vehicle_log'), { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({data:[rec]})});
+    alert('ভেহিকল লগ সংরক্ষিত');
+    document.getElementById('vehicleForm').reset();
+    document.getElementById('veh_date').value = todayISO();
+    await loadVehicleLog();
+  } catch (e) { console.error(e); }
+}
+
+async function loadVehicleLog() {
+  try {
+    const data = await apiFetch(sheetUrl('vehicle_log') + '?_sort=-date&_limit=10');
+    const tbody = document.querySelector('#vehTable tbody');
+    tbody.innerHTML = '';
+    (data || []).forEach(v => {
+      const tr = document.createElement('tr');
+      tr.innerHTML = `<td>${escapeHtml(v.date)}</td><td>${escapeHtml(v.driver)}</td><td>${escapeHtml((v.kms)||0)}</td><td>${escapeHtml(v.purpose||'')}</td>`;
+      tbody.appendChild(tr);
+    });
+  } catch (e) { console.warn(e); }
+}
+
+/* --- Export CSV of products (simple client-side) --- */
+function exportCsv() {
+  const rows = [
+    ['product_name','product_category','product_stock','product_price','product_note'],
+    ...PRODUCTS.map(p => [p.product_name, p.product_category, p.product_stock, p.product_price, p.product_note])
+  ];
+  const csv = rows.map(r => r.map(c => `"${String(c).replace(/"/g,'""')}"`).join(',')).join('\n');
+  const blob = new Blob([csv], {type:'text/csv;charset=utf-8;'});
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url; a.download = 'products_export.csv';
+  document.body.appendChild(a); a.click(); a.remove(); URL.revokeObjectURL(url);
+}
+
+/* --- Small utils --- */
+function escapeHtml(s) {
+  if (s === null || s === undefined) return '';
+  return String(s).replace(/[&<>"'`]/g, function(m){ return ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;','`':'&#96;'})[m]; });
+}
+function numberFormat(n) {
+  return '৳ ' + Number(n||0).toLocaleString('bn-BD');
+}
+
+/* --- Quick load --- */
+window.addEventListener('DOMContentLoaded', () => {
+  init().catch(err => console.error('Init error', err));
+});
+</script>
+</body>
+</html>
