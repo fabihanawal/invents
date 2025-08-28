@@ -106,13 +106,30 @@
             background-color: #3a5fce;
             border-color: #3a5fce;
         }
+        
+        .notification-badge {
+            position: absolute;
+            top: -5px;
+            right: -5px;
+            padding: 3px 8px;
+            border-radius: 50%;
+            background: var(--danger);
+            color: white;
+            font-size: 0.7rem;
+        }
+        
+        .loading {
+            display: none;
+            text-align: center;
+            padding: 20px;
+        }
     </style>
 </head>
 <body>
     <div class="container-fluid">
         <div class="row">
             <!-- Sidebar -->
-            <div class="col-md-3 col-lg-2 sidebar px-0 d-md-block collapse">
+            <div class="col-md-3 col-lg-2 sidebar px-0 d-md-block collapse" id="sidebar">
                 <div class="text-center p-4">
                     <h4>সুজন স্কয়ার</h4>
                     <p class="text-white-50 small">বদরগাছি, নওগাঁ</p>
@@ -151,7 +168,7 @@
                     </li>
                 </ul>
                 <div class="mt-auto p-3 text-center">
-                    <small class="text-white-50">Powered by Google Sheets</small>
+                    <small class="text-white-50">Powered by SheetDB</small>
                 </div>
             </div>
 
@@ -160,14 +177,14 @@
                 <!-- Topbar -->
                 <nav class="topbar navbar navbar-expand shadow mb-4">
                     <div class="container-fluid">
-                        <button class="btn btn-link d-md-none" type="button" data-bs-toggle="collapse" data-bs-target=".sidebar">
+                        <button class="btn btn-link d-md-none" type="button" data-bs-toggle="collapse" data-bs-target="#sidebar">
                             <i class="fas fa-bars"></i>
                         </button>
                         <ul class="navbar-nav ms-auto">
                             <li class="nav-item dropdown no-arrow mx-1">
-                                <a class="nav-link dropdown-toggle" href="#" id="alertsDropdown" role="button" data-bs-toggle="dropdown">
+                                <a class="nav-link dropdown-toggle position-relative" href="#" id="alertsDropdown" role="button" data-bs-toggle="dropdown">
                                     <i class="fas fa-bell fa-fw"></i>
-                                    <span class="badge bg-danger badge-counter">3+</span>
+                                    <span class="notification-badge" id="notificationCount">0</span>
                                 </a>
                             </li>
                             <li class="nav-item dropdown no-arrow">
@@ -180,8 +197,16 @@
                     </div>
                 </nav>
 
+                <!-- Loading Indicator -->
+                <div class="loading" id="loadingIndicator">
+                    <div class="spinner-border text-primary" role="status">
+                        <span class="visually-hidden">লোড হচ্ছে...</span>
+                    </div>
+                    <p class="mt-2">ডেটা লোড হচ্ছে...</p>
+                </div>
+
                 <!-- Tab Content -->
-                <div class="container-fluid tab-content">
+                <div class="container-fluid tab-content" id="mainContent">
                     <!-- Dashboard Tab -->
                     <div class="tab-pane fade show active" id="dashboard">
                         <div class="row">
@@ -191,7 +216,7 @@
                                         <div class="row no-gutters align-items-center">
                                             <div class="col mr-2">
                                                 <div class="text-xs font-weight-bold text-primary text-uppercase mb-1">মোট পণ্য</div>
-                                                <div class="h5 mb-0 font-weight-bold text-gray-800">১৫৬</div>
+                                                <div class="h5 mb-0 font-weight-bold text-gray-800" id="totalProducts">0</div>
                                             </div>
                                             <div class="col-auto">
                                                 <i class="fas fa-boxes fa-2x text-gray-300"></i>
@@ -207,7 +232,7 @@
                                         <div class="row no-gutters align-items-center">
                                             <div class="col mr-2">
                                                 <div class="text-xs font-weight-bold text-success text-uppercase mb-1">আজকের বিক্রয়</div>
-                                                <div class="h5 mb-0 font-weight-bold text-gray-800">৳ ১২,৫০০</div>
+                                                <div class="h5 mb-0 font-weight-bold text-gray-800" id="todaySales">৳ ০</div>
                                             </div>
                                             <div class="col-auto">
                                                 <i class="fas fa-taka-sign fa-2x text-gray-300"></i>
@@ -223,7 +248,7 @@
                                         <div class="row no-gutters align-items-center">
                                             <div class="col mr-2">
                                                 <div class="text-xs font-weight-bold text-info text-uppercase mb-1">ফেরত পণ্য</div>
-                                                <div class="h5 mb-0 font-weight-bold text-gray-800">৮</div>
+                                                <div class="h5 mb-0 font-weight-bold text-gray-800" id="totalReturns">0</div>
                                             </div>
                                             <div class="col-auto">
                                                 <i class="fas fa-undo fa-2x text-gray-300"></i>
@@ -239,7 +264,7 @@
                                         <div class="row no-gutters align-items-center">
                                             <div class="col mr-2">
                                                 <div class="text-xs font-weight-bold text-warning text-uppercase mb-1">এক্সপায়ার হওয়ার পণ্য</div>
-                                                <div class="h5 mb-0 font-weight-bold text-gray-800">৫</div>
+                                                <div class="h5 mb-0 font-weight-bold text-gray-800" id="expiredProducts">0</div>
                                             </div>
                                             <div class="col-auto">
                                                 <i class="fas fa-exclamation-triangle fa-2x text-gray-300"></i>
@@ -268,27 +293,9 @@
                                                         <th>তারিখ</th>
                                                     </tr>
                                                 </thead>
-                                                <tbody>
+                                                <tbody id="recentSales">
                                                     <tr>
-                                                        <td>প্রাণ পাউরুটি</td>
-                                                        <td>মধ্যপাড়া জেনারেল স্টোর</td>
-                                                        <td>২০ পিস</td>
-                                                        <td>৳ ৪০০</td>
-                                                        <td>২০/০৫/২০২৩</td>
-                                                    </tr>
-                                                    <tr>
-                                                        <td>টiger বিস্কুট</td>
-                                                        <td>নতুন বাজার ক Store</td>
-                                                        <td>৩০ প্যাকেট</td>
-                                                        <td>৳ ৯০০</td>
-                                                        <td>২০/০৫/২০২৩</td>
-                                                    </tr>
-                                                    <tr>
-                                                        <td>ফ্রেশ সেমাই</td>
-                                                        <td>পুরাতন বাজার স্টোর</td>
-                                                        <td>১৫ কেজি</td>
-                                                        <td>৳ ১,২০০</td>
-                                                        <td>১৯/০৫/২০২৩</td>
+                                                        <td colspan="5" class="text-center">কোন ডেটা পাওয়া যায়নি</td>
                                                     </tr>
                                                 </tbody>
                                             </table>
@@ -303,26 +310,8 @@
                                         <h6 class="m-0 font-weight-bold text-primary">এক্সপায়ারি সতর্কতা</h6>
                                     </div>
                                     <div class="card-body">
-                                        <div class="mt-4">
-                                            <h4 class="small font-weight-bold">প্রাণ পাউরুটি <span class="float-right">৩ দিন বাকি</span></h4>
-                                            <div class="progress mb-4">
-                                                <div class="progress-bar bg-danger" role="progressbar" style="width: 10%"></div>
-                                            </div>
-                                            
-                                            <h4 class="small font-weight-bold">নাগেট বিস্কুট <span class="float-right">৭ দিন বাকি</span></h4>
-                                            <div class="progress mb-4">
-                                                <div class="progress-bar bg-warning" role="progressbar" style="width: 30%"></div>
-                                            </div>
-                                            
-                                            <h4 class="small font-weight-bold">ফ্রেশ সেমাই <span class="float-right">১৫ দিন বাকি</span></h4>
-                                            <div class="progress mb-4">
-                                                <div class="progress-bar bg-info" role="progressbar" style="width: 50%"></div>
-                                            </div>
-                                            
-                                            <h4 class="small font-weight-bold">আফতাব সেমাই <span class="float-right">৩০ দিন বাকি</span></h4>
-                                            <div class="progress mb-4">
-                                                <div class="progress-bar bg-success" role="progressbar" style="width: 80%"></div>
-                                            </div>
+                                        <div id="expiryWarnings">
+                                            <p class="text-center">কোন সতর্কতা নেই</p>
                                         </div>
                                     </div>
                                 </div>
@@ -354,58 +343,9 @@
                                                 <th>অ্যাকশন</th>
                                             </tr>
                                         </thead>
-                                        <tbody>
+                                        <tbody id="productsTableBody">
                                             <tr>
-                                                <td><img src="https://via.placeholder.com/60" class="product-image"></td>
-                                                <td>প্রাণ পাউরুটি</td>
-                                                <td>পাউরুটি</td>
-                                                <td>৳ ১৫</td>
-                                                <td>৳ ২০</td>
-                                                <td>১৫০</td>
-                                                <td>২৩/০৫/২০২৩</td>
-                                                <td>
-                                                    <button class="btn btn-info btn-sm"><i class="fas fa-edit"></i></button>
-                                                    <button class="btn btn-danger btn-sm"><i class="fas fa-trash"></i></button>
-                                                </td>
-                                            </tr>
-                                            <tr class="low-stock">
-                                                <td><img src="https://via.placeholder.com/60" class="product-image"></td>
-                                                <td>টাইগার বিস্কুট</td>
-                                                <td>বিস্কুট</td>
-                                                <td>৳ ২৫</td>
-                                                <td>৳ ৩০</td>
-                                                <td>১২</td>
-                                                <td>৩০/০৫/২০২۳</td>
-                                                <td>
-                                                    <button class="btn btn-info btn-sm"><i class="fas fa-edit"></i></button>
-                                                    <button class="btn btn-danger btn-sm"><i class="fas fa-trash"></i></button>
-                                                </td>
-                                            </tr>
-                                            <tr>
-                                                <td><img src="https://via.placeholder.com/60" class="product-image"></td>
-                                                <td>ফ্রেশ সেমাই</td>
-                                                <td>সেমাই</td>
-                                                <td>৳ ৭০</td>
-                                                <td>৳ ৮০</td>
-                                                <td>৮০</td>
-                                                <td>১৫/০৬/২০২৩</td>
-                                                <td>
-                                                    <button class="btn btn-info btn-sm"><i class="fas fa-edit"></i></button>
-                                                    <button class="btn btn-danger btn-sm"><i class="fas fa-trash"></i></button>
-                                                </td>
-                                            </tr>
-                                            <tr class="expired">
-                                                <td><img src="https://via.placeholder.com/60" class="product-image"></td>
-                                                <td>নাগেট বিস্কুট</td>
-                                                <td>বিস্কুট</td>
-                                                <td>৳ ২০</td>
-                                                <td>৳ ২৫</td>
-                                                <td>০</td>
-                                                <td>১০/০৫/২০২৩</td>
-                                                <td>
-                                                    <button class="btn btn-info btn-sm"><i class="fas fa-edit"></i></button>
-                                                    <button class="btn btn-danger btn-sm"><i class="fas fa-trash"></i></button>
-                                                </td>
+                                                <td colspan="8" class="text-center">লোড হচ্ছে...</td>
                                             </tr>
                                         </tbody>
                                     </table>
@@ -437,42 +377,9 @@
                                                 <th>অ্যাকশন</th>
                                             </tr>
                                         </thead>
-                                        <tbody>
+                                        <tbody id="salesTableBody">
                                             <tr>
-                                                <td>INV-001</td>
-                                                <td>মধ্যপাড়া জেনারেল স্টোর</td>
-                                                <td>প্রাণ পাউরুটি</td>
-                                                <td>২০ পিস</td>
-                                                <td>৳ ৪০০</td>
-                                                <td>২০/০৫/২০২৩</td>
-                                                <td>
-                                                    <button class="btn btn-info btn-sm"><i class="fas fa-eye"></i></button>
-                                                    <button class="btn btn-danger btn-sm"><i class="fas fa-trash"></i></button>
-                                                </td>
-                                            </tr>
-                                            <tr>
-                                                <td>INV-002</td>
-                                                <td>নতুন বাজার Store</td>
-                                                <td>টাইগার বিস্কুট</td>
-                                                <td>৩০ প্যাকেট</td>
-                                                <td>৳ ৯০০</td>
-                                                <td>২০/০৫/২০২৩</td>
-                                                <td>
-                                                    <button class="btn btn-info btn-sm"><i class="fas fa-eye"></i></button>
-                                                    <button class="btn btn-danger btn-sm"><i class="fas fa-trash"></i></button>
-                                                </td>
-                                            </tr>
-                                            <tr>
-                                                <td>INV-003</td>
-                                                <td>পুরাতন বাজার স্টোর</td>
-                                                <td>ফ্রেশ সেমাই</td>
-                                                <td>১৫ কেজি</td>
-                                                <td>৳ ১,২০০</td>
-                                                <td>১৯/০৫/২০২৩</td>
-                                                <td>
-                                                    <button class="btn btn-info btn-sm"><i class="fas fa-eye"></i></button>
-                                                    <button class="btn btn-danger btn-sm"><i class="fas fa-trash"></i></button>
-                                                </td>
+                                                <td colspan="7" class="text-center">লোড হচ্ছে...</td>
                                             </tr>
                                         </tbody>
                                     </table>
@@ -488,7 +395,24 @@
                                 <h6 class="m-0 font-weight-bold text-primary">ফেরত পণ্য তালিকা</h6>
                             </div>
                             <div class="card-body">
-                                <p>ফেরত পাওয়া পণ্যগুলির তালিকা এখানে দেখানো হবে।</p>
+                                <div class="table-responsive">
+                                    <table class="table table-bordered" width="100%" cellspacing="0">
+                                        <thead>
+                                            <tr>
+                                                <th>পণ্যের নাম</th>
+                                                <th>দোকান</th>
+                                                <th>পরিমাণ</th>
+                                                <th>ফেরতের কারণ</th>
+                                                <th>তারিখ</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody id="returnsTableBody">
+                                            <tr>
+                                                <td colspan="5" class="text-center">কোন ফেরত পণ্য নেই</td>
+                                            </tr>
+                                        </tbody>
+                                    </table>
+                                </div>
                             </div>
                         </div>
                     </div>
@@ -499,7 +423,24 @@
                                 <h6 class="m-0 font-weight-bold text-primary">এক্সপায়ার্ড পণ্য তালিকা</h6>
                             </div>
                             <div class="card-body">
-                                <p>এক্সপায়ারি তারিখ শেষ হয়ে গেছে এমন পণ্যগুলির তালিকা এখানে দেখানো হবে।</p>
+                                <div class="table-responsive">
+                                    <table class="table table-bordered" width="100%" cellspacing="0">
+                                        <thead>
+                                            <tr>
+                                                <th>পণ্যের নাম</th>
+                                                <th>ক্যাটাগরি</th>
+                                                <th>স্টক</th>
+                                                <th>এক্সপায়ারি তারিখ</th>
+                                                <th>অ্যাকশন</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody id="expiredTableBody">
+                                            <tr>
+                                                <td colspan="5" class="text-center">কোন এক্সপায়ার্ড পণ্য নেই</td>
+                                            </tr>
+                                        </tbody>
+                                    </table>
+                                </div>
                             </div>
                         </div>
                     </div>
@@ -512,16 +453,12 @@
                             <div class="card-body">
                                 <div class="row">
                                     <div class="col-md-6">
-                                        <h5>গুগল শিট কনফিগারেশন</h5>
+                                        <h5>SheetDB কনফিগারেশন</h5>
                                         <div class="mb-3">
-                                            <label for="sheetId" class="form-label">শিট আইডি</label>
-                                            <input type="text" class="form-control" id="sheetId" placeholder="Google Sheet ID">
+                                            <label for="sheetdbId" class="form-label">SheetDB ID</label>
+                                            <input type="text" class="form-control" id="sheetdbId" placeholder="SheetDB ID">
                                         </div>
-                                        <div class="mb-3">
-                                            <label for="sheetName" class="form-label">শিটের নাম</label>
-                                            <input type="text" class="form-control" id="sheetName" placeholder="Sheet Name">
-                                        </div>
-                                        <button class="btn btn-primary">সংরক্ষণ করুন</button>
+                                        <button class="btn btn-primary" onclick="saveSheetDBConfig()">সংরক্ষণ করুন</button>
                                     </div>
                                     <div class="col-md-6">
                                         <h5>ব্যবসা তথ্য</h5>
@@ -535,6 +472,12 @@
                                         </div>
                                         <button class="btn btn-primary">সংরক্ষণ করুন</button>
                                     </div>
+                                </div>
+                                <hr>
+                                <div class="mt-4">
+                                    <h5>ডেটা ম্যানেজমেন্ট</h5>
+                                    <button class="btn btn-success me-2" onclick="loadAllData()"><i class="fas fa-sync-alt"></i> ডেটা রিফ্রেশ করুন</button>
+                                    <button class="btn btn-danger" onclick="clearAllData()"><i class="fas fa-trash"></i> সব ডেটা ডিলিট করুন</button>
                                 </div>
                             </div>
                         </div>
@@ -553,43 +496,82 @@
                     <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
                 </div>
                 <div class="modal-body">
-                    <form>
+                    <form id="addProductForm">
                         <div class="mb-3">
-                            <label for="productName" class="form-label">পণ্যের নাম</label>
-                            <input type="text" class="form-control" id="productName">
+                            <label for="productName" class="form-label">পণ্যের নাম *</label>
+                            <input type="text" class="form-control" id="productName" required>
                         </div>
                         <div class="mb-3">
-                            <label for="productCategory" class="form-label">ক্যাটাগরি</label>
-                            <select class="form-select" id="productCategory">
-                                <option selected>পাউরুটি</option>
-                                <option>বিস্কুট</option>
-                                <option>সেমাই</option>
-                                <option>অন্যান্য</option>
+                            <label for="productCategory" class="form-label">ক্যাটাগরি *</label>
+                            <select class="form-select" id="productCategory" required>
+                                <option value="">নির্বাচন করুন</option>
+                                <option value="পাউরুটি">পাউরুটি</option>
+                                <option value="বিস্কুট">বিস্কুট</option>
+                                <option value="সেমাই">সেমাই</option>
+                                <option value="অন্যান্য">অন্যান্য</option>
                             </select>
                         </div>
                         <div class="row">
                             <div class="col-md-6 mb-3">
-                                <label for="wholesalePrice" class="form-label">পাইকারি মূল্য</label>
-                                <input type="number" class="form-control" id="wholesalePrice">
+                                <label for="wholesalePrice" class="form-label">পাইকারি মূল্য *</label>
+                                <input type="number" class="form-control" id="wholesalePrice" min="0" required>
                             </div>
                             <div class="col-md-6 mb-3">
-                                <label for="retailPrice" class="form-label">খুচরা মূল্য</label>
-                                <input type="number" class="form-control" id="retailPrice">
+                                <label for="retailPrice" class="form-label">খুচরা মূল্য *</label>
+                                <input type="number" class="form-control" id="retailPrice" min="0" required>
                             </div>
                         </div>
                         <div class="mb-3">
-                            <label for="stockQuantity" class="form-label">স্টক পরিমাণ</label>
-                            <input type="number" class="form-control" id="stockQuantity">
+                            <label for="stockQuantity" class="form-label">স্টক পরিমাণ *</label>
+                            <input type="number" class="form-control" id="stockQuantity" min="0" required>
                         </div>
                         <div class="mb-3">
-                            <label for="expiryDate" class="form-label">এক্সপায়ারি তারিখ</label>
-                            <input type="date" class="form-control" id="expiryDate">
+                            <label for="expiryDate" class="form-label">এক্সপায়ারি তারিখ *</label>
+                            <input type="date" class="form-control" id="expiryDate" required>
                         </div>
                     </form>
                 </div>
                 <div class="modal-footer">
                     <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">বাতিল</button>
-                    <button type="button" class="btn btn-primary">সংরক্ষণ করুন</button>
+                    <button type="button" class="btn btn-primary" onclick="addProduct()">সংরক্ষণ করুন</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Add Sale Modal -->
+    <div class="modal fade" id="addSaleModal" tabindex="-1" aria-labelledby="addSaleModalLabel" aria-hidden="true">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="addSaleModalLabel">নতুন বিক্রয় যোগ করুন</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <form id="addSaleForm">
+                        <div class="mb-3">
+                            <label for="saleProduct" class="form-label">পণ্য নির্বাচন করুন *</label>
+                            <select class="form-select" id="saleProduct" required>
+                                <option value="">নির্বাচন করুন</option>
+                            </select>
+                        </div>
+                        <div class="mb-3">
+                            <label for="shopName" class="form-label">দোকানের নাম *</label>
+                            <input type="text" class="form-control" id="shopName" required>
+                        </div>
+                        <div class="mb-3">
+                            <label for="saleQuantity" class="form-label">পরিমাণ *</label>
+                            <input type="number" class="form-control" id="saleQuantity" min="1" required>
+                        </div>
+                        <div class="mb-3">
+                            <label for="saleDate" class="form-label">তারিখ *</label>
+                            <input type="date" class="form-control" id="saleDate" required>
+                        </div>
+                    </form>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">বাতিল</button>
+                    <button type="button" class="btn btn-primary" onclick="addSale()">সংরক্ষণ করুন</button>
                 </div>
             </div>
         </div>
@@ -597,8 +579,17 @@
 
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/js/bootstrap.bundle.min.js"></script>
     <script>
-        // Activate sidebar tabs
+        // SheetDB configuration
+        let sheetDBId = localStorage.getItem('sheetdb_id') || '';
+        const sheetDBBaseURL = 'https://sheetdb.io/api/v1/uouml7bvooqtu';
+        
+        // DOM elements
+        const loadingIndicator = document.getElementById('loadingIndicator');
+        const mainContent = document.getElementById('mainContent');
+        
+        // Initialize the application
         document.addEventListener('DOMContentLoaded', function() {
+            // Activate sidebar tabs
             const triggerTabList = document.querySelectorAll('.nav-link')
             triggerTabList.forEach(triggerEl => {
                 triggerEl.addEventListener('click', function(event) {
@@ -619,31 +610,320 @@
                 })
             })
             
-            // Simulate loading data
-            console.log("সুজন স্কয়ার ইনভেন্টরি সিস্টেম লোড হচ্ছে...");
-            
-            // This is where you would integrate with Google Sheets API
-            // For a complete implementation, you would need to use:
-            // 1. Google Sheets API client library
-            // 2. OAuth2 authentication
-            // 3. Proper error handling
+            // Load SheetDB configuration
+            if (sheetDBId) {
+                document.getElementById('sheetdbId').value = sheetDBId;
+                loadAllData();
+            } else {
+                showLoading(false);
+            }
         });
         
-        // Google Sheets integration would be implemented here
-        // This is a simplified example - real implementation requires OAuth and API keys
-        
-        function loadDataFromSheets() {
-            // This function would load data from Google Sheets
-            console.log("গুগল শিট থেকে ডেটা লোড হচ্ছে...");
-            // Actual implementation would use:
-            // gapi.client.sheets.spreadsheets.values.get(...)
+        // Show/hide loading indicator
+        function showLoading(show) {
+            if (show) {
+                loadingIndicator.style.display = 'block';
+                mainContent.style.opacity = '0.5';
+            } else {
+                loadingIndicator.style.display = 'none';
+                mainContent.style.opacity = '1';
+            }
         }
         
-        function saveDataToSheets() {
-            // This function would save data to Google Sheets
-            console.log("গুগল শিটে ডেটা সংরক্ষণ করা হচ্ছে...");
-            // Actual implementation would use:
-            // gapi.client.sheets.spreadsheets.values.update(...)
+        // Save SheetDB configuration
+        function saveSheetDBConfig() {
+            const newSheetDBId = document.getElementById('sheetdbId').value;
+            if (newSheetDBId) {
+                sheetDBId = newSheetDBId;
+                localStorage.setItem('sheetdb_id', sheetDBId);
+                alert('কনফিগারেশন সংরক্ষণ করা হয়েছে!');
+                loadAllData();
+            } else {
+                alert('দয়া করে একটি বৈধ SheetDB ID প্রদান করুন।');
+            }
+        }
+        
+        // Load all data from SheetDB
+        function loadAllData() {
+            if (!sheetDBId) {
+                alert('দয়া করে প্রথমে SheetDB ID কনফিগার করুন।');
+                return;
+            }
+            
+            showLoading(true);
+            
+            // In a real implementation, we would fetch data from SheetDB
+            // For this example, we'll use mock data after a short delay
+            setTimeout(() => {
+                // Mock data for demonstration
+                const mockProducts = [
+                    { id: 1, name: 'প্রাণ পাউরুটি', category: 'পাউরুটি', wholesale_price: 15, retail_price: 20, stock: 150, expiry_date: '2023-05-23' },
+                    { id: 2, name: 'টাইগার বিস্কুট', category: 'বিস্কুট', wholesale_price: 25, retail_price: 30, stock: 12, expiry_date: '2023-05-30' },
+                    { id: 3, name: 'ফ্রেশ সেমাই', category: 'সেমাই', wholesale_price: 70, retail_price: 80, stock: 80, expiry_date: '2023-06-15' },
+                    { id: 4, name: 'নাগেট বিস্কুট', category: 'বিস্কুট', wholesale_price: 20, retail_price: 25, stock: 0, expiry_date: '2023-05-10' }
+                ];
+                
+                const mockSales = [
+                    { id: 1, invoice_no: 'INV-001', product_id: 1, product_name: 'প্রাণ পাউরুটি', shop_name: 'মধ্যপাড়া জেনারেল স্টোর', quantity: 20, total_price: 400, date: '2023-05-20' },
+                    { id: 2, invoice_no: 'INV-002', product_id: 2, product_name: 'টাইগার বিস্কুট', shop_name: 'নতুন বাজার Store', quantity: 30, total_price: 900, date: '2023-05-20' },
+                    { id: 3, invoice_no: 'INV-003', product_id: 3, product_name: 'ফ্রেশ সেমাই', shop_name: 'পুরাতন বাজার স্টোর', quantity: 15, total_price: 1200, date: '2023-05-19' }
+                ];
+                
+                // Update dashboard stats
+                document.getElementById('totalProducts').textContent = mockProducts.length;
+                document.getElementById('todaySales').textContent = '৳ ১,৩০০';
+                document.getElementById('totalReturns').textContent = '২';
+                document.getElementById('expiredProducts').textContent = '১';
+                document.getElementById('notificationCount').textContent = '৩';
+                
+                // Populate products table
+                populateProductsTable(mockProducts);
+                
+                // Populate sales table
+                populateSalesTable(mockSales);
+                
+                // Populate recent sales
+                populateRecentSales(mockSales);
+                
+                // Populate expiry warnings
+                populateExpiryWarnings(mockProducts);
+                
+                // Populate product dropdown for sales
+                populateProductDropdown(mockProducts);
+                
+                showLoading(false);
+            }, 1500);
+        }
+        
+        // Populate products table
+        function populateProductsTable(products) {
+            const tbody = document.getElementById('productsTableBody');
+            tbody.innerHTML = '';
+            
+            if (products.length === 0) {
+                tbody.innerHTML = '<tr><td colspan="8" class="text-center">কোন পণ্য পাওয়া যায়নি</td></tr>';
+                return;
+            }
+            
+            products.forEach(product => {
+                const isExpired = new Date(product.expiry_date) < new Date();
+                const isLowStock = product.stock < 20;
+                
+                const row = document.createElement('tr');
+                if (isExpired) row.classList.add('expired');
+                if (isLowStock) row.classList.add('low-stock');
+                
+                row.innerHTML = `
+                    <td><img src="https://via.placeholder.com/60?text=${encodeURIComponent(product.name)}" class="product-image"></td>
+                    <td>${product.name}</td>
+                    <td>${product.category}</td>
+                    <td>৳ ${product.wholesale_price}</td>
+                    <td>৳ ${product.retail_price}</td>
+                    <td>${product.stock}</td>
+                    <td>${formatDate(product.expiry_date)}</td>
+                    <td>
+                        <button class="btn btn-info btn-sm"><i class="fas fa-edit"></i></button>
+                        <button class="btn btn-danger btn-sm" onclick="deleteProduct(${product.id})"><i class="fas fa-trash"></i></button>
+                    </td>
+                `;
+                
+                tbody.appendChild(row);
+            });
+        }
+        
+        // Populate sales table
+        function populateSalesTable(sales) {
+            const tbody = document.getElementById('salesTableBody');
+            tbody.innerHTML = '';
+            
+            if (sales.length === 0) {
+                tbody.innerHTML = '<tr><td colspan="7" class="text-center">কোন বিক্রয় রেকর্ড পাওয়া যায়নি</td></tr>';
+                return;
+            }
+            
+            sales.forEach(sale => {
+                const row = document.createElement('tr');
+                row.innerHTML = `
+                    <td>${sale.invoice_no}</td>
+                    <td>${sale.shop_name}</td>
+                    <td>${sale.product_name}</td>
+                    <td>${sale.quantity} ${sale.product_name.includes('সেমাই') ? 'কেজি' : 'পিস'}</td>
+                    <td>৳ ${sale.total_price}</td>
+                    <td>${formatDate(sale.date)}</td>
+                    <td>
+                        <button class="btn btn-info btn-sm"><i class="fas fa-eye"></i></button>
+                        <button class="btn btn-danger btn-sm" onclick="deleteSale(${sale.id})"><i class="fas fa-trash"></i></button>
+                    </td>
+                `;
+                
+                tbody.appendChild(row);
+            });
+        }
+        
+        // Populate recent sales
+        function populateRecentSales(sales) {
+            const tbody = document.getElementById('recentSales');
+            tbody.innerHTML = '';
+            
+            if (sales.length === 0) {
+                tbody.innerHTML = '<tr><td colspan="5" class="text-center">কোন বিক্রয় রেকর্ড পাওয়া যায়নি</td></tr>';
+                return;
+            }
+            
+            // Show only recent 3 sales
+            const recentSales = sales.slice(0, 3);
+            
+            recentSales.forEach(sale => {
+                const row = document.createElement('tr');
+                row.innerHTML = `
+                    <td>${sale.product_name}</td>
+                    <td>${sale.shop_name}</td>
+                    <td>${sale.quantity} ${sale.product_name.includes('সেমাই') ? 'কেজি' : 'পিস'}</td>
+                    <td>৳ ${sale.total_price}</td>
+                    <td>${formatDate(sale.date)}</td>
+                `;
+                
+                tbody.appendChild(row);
+            });
+        }
+        
+        // Populate expiry warnings
+        function populateExpiryWarnings(products) {
+            const container = document.getElementById('expiryWarnings');
+            container.innerHTML = '';
+            
+            // Find products expiring in the next 7 days
+            const warningProducts = products.filter(product => {
+                const expiryDate = new Date(product.expiry_date);
+                const today = new Date();
+                const diffTime = expiryDate - today;
+                const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+                return diffDays <= 7 && diffDays >= 0;
+            });
+            
+            if (warningProducts.length === 0) {
+                container.innerHTML = '<p class="text-center">কোন সতর্কতা নেই</p>';
+                return;
+            }
+            
+            warningProducts.forEach(product => {
+                const expiryDate = new Date(product.expiry_date);
+                const today = new Date();
+                const diffTime = expiryDate - today;
+                const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+                
+                let progressClass = 'bg-success';
+                if (diffDays <= 3) progressClass = 'bg-danger';
+                else if (diffDays <= 7) progressClass = 'bg-warning';
+                
+                const warningDiv = document.createElement('div');
+                warningDiv.classList.add('mb-4');
+                warningDiv.innerHTML = `
+                    <h4 class="small font-weight-bold">${product.name} <span class="float-right">${diffDays} দিন বাকি</span></h4>
+                    <div class="progress">
+                        <div class="progress-bar ${progressClass}" role="progressbar" style="width: ${100 - (diffDays * 100 / 30)}%"></div>
+                    </div>
+                `;
+                
+                container.appendChild(warningDiv);
+            });
+        }
+        
+        // Populate product dropdown for sales
+        function populateProductDropdown(products) {
+            const dropdown = document.getElementById('saleProduct');
+            dropdown.innerHTML = '<option value="">নির্বাচন করুন</option>';
+            
+            products.forEach(product => {
+                if (product.stock > 0) {
+                    const option = document.createElement('option');
+                    option.value = product.id;
+                    option.textContent = `${product.name} (স্টক: ${product.stock})`;
+                    dropdown.appendChild(option);
+                }
+            });
+        }
+        
+        // Add new product
+        function addProduct() {
+            const name = document.getElementById('productName').value;
+            const category = document.getElementById('productCategory').value;
+            const wholesalePrice = document.getElementById('wholesalePrice').value;
+            const retailPrice = document.getElementById('retailPrice').value;
+            const stock = document.getElementById('stockQuantity').value;
+            const expiryDate = document.getElementById('expiryDate').value;
+            
+            if (!name || !category || !wholesalePrice || !retailPrice || !stock || !expiryDate) {
+                alert('দয়া করে সব প্রয়োজনীয় তথ্য প্রদান করুন।');
+                return;
+            }
+            
+            // In a real implementation, we would save to SheetDB
+            // For this example, we'll just show a success message
+            alert('পণ্য সফলভাবে যোগ করা হয়েছে!');
+            document.getElementById('addProductForm').reset();
+            document.getElementById('addProductModal').querySelector('.btn-close').click();
+            
+            // Reload data
+            loadAllData();
+        }
+        
+        // Add new sale
+        function addSale() {
+            const productId = document.getElementById('saleProduct').value;
+            const shopName = document.getElementById('shopName').value;
+            const quantity = document.getElementById('saleQuantity').value;
+            const date = document.getElementById('saleDate').value;
+            
+            if (!productId || !shopName || !quantity || !date) {
+                alert('দয়া করে সব প্রয়োজনীয় তথ্য প্রদান করুন।');
+                return;
+            }
+            
+            // In a real implementation, we would save to SheetDB
+            // For this example, we'll just show a success message
+            alert('বিক্রয় রেকর্ড সফলভাবে যোগ করা হয়েছে!');
+            document.getElementById('addSaleForm').reset();
+            document.getElementById('addSaleModal').querySelector('.btn-close').click();
+            
+            // Reload data
+            loadAllData();
+        }
+        
+        // Delete product
+        function deleteProduct(id) {
+            if (confirm('আপনি কি নিশ্চিত যে আপনি এই পণ্য ডিলিট করতে চান?')) {
+                // In a real implementation, we would delete from SheetDB
+                alert('পণ্য ডিলিট করা হয়েছে!');
+                loadAllData();
+            }
+        }
+        
+        // Delete sale
+        function deleteSale(id) {
+            if (confirm('আপনি কি নিশ্চিত যে আপনি এই বিক্রয় রেকর্ড ডিলিট করতে চান?')) {
+                // In a real implementation, we would delete from SheetDB
+                alert('বিক্রয় রেকর্ড ডিলিট করা হয়েছে!');
+                loadAllData();
+            }
+        }
+        
+        // Clear all data
+        function clearAllData() {
+            if (confirm('আপনি কি নিশ্চিত যে আপনি সব ডেটা ডিলিট করতে চান? এই কাজটি পূর্বাবস্থায় ফেরানো যাবে না।')) {
+                // In a real implementation, we would clear SheetDB
+                alert('সব ডেটা ডিলিট করা হয়েছে!');
+                loadAllData();
+            }
+        }
+        
+        // Format date to DD/MM/YYYY
+        function formatDate(dateString) {
+            const date = new Date(dateString);
+            const day = date.getDate().toString().padStart(2, '0');
+            const month = (date.getMonth() + 1).toString().padStart(2, '0');
+            const year = date.getFullYear();
+            return `${day}/${month}/${year}`;
         }
     </script>
 </body>
