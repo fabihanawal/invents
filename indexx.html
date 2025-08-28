@@ -1,0 +1,650 @@
+<!DOCTYPE html>
+<html lang="bn">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>সুজন স্কয়ার - ইনভেন্টরি ম্যানেজমেন্ট</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <style>
+        :root {
+            --primary: #4e73df;
+            --secondary: #6f42c1;
+            --success: #1cc88a;
+            --info: #36b9cc;
+            --warning: #f6c23e;
+            --danger: #e74a3b;
+            --light: #f8f9fc;
+            --dark: #5a5c69;
+        }
+        
+        body {
+            font-family: 'Hind Siliguri', 'SolaimanLipi', sans-serif;
+            background-color: #f8f9fc;
+        }
+        
+        .sidebar {
+            min-height: 100vh;
+            background: linear-gradient(180deg, var(--primary) 10%, var(--secondary) 100%);
+            color: white;
+        }
+        
+        .sidebar .nav-link {
+            color: rgba(255, 255, 255, 0.8);
+            margin: 8px 0;
+            border-radius: 5px;
+        }
+        
+        .sidebar .nav-link:hover {
+            color: #fff;
+            background-color: rgba(255, 255, 255, 0.1);
+        }
+        
+        .sidebar .nav-link.active {
+            color: #fff;
+            background-color: rgba(255, 255, 255, 0.2);
+            font-weight: bold;
+        }
+        
+        .sidebar .nav-link i {
+            margin-right: 10px;
+        }
+        
+        .topbar {
+            background-color: white;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+        }
+        
+        .card-stats .card-body {
+            padding: 1rem;
+        }
+        
+        .card-stats .icon-circle {
+            width: 50px;
+            height: 50px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-size: 1.5rem;
+        }
+        
+        .bg-gradient-primary {
+            background: linear-gradient(135deg, var(--primary) 0%, var(--secondary) 100%);
+        }
+        
+        .product-image {
+            width: 60px;
+            height: 60px;
+            object-fit: cover;
+            border-radius: 5px;
+        }
+        
+        .expired {
+            background-color: rgba(231, 74, 59, 0.1);
+        }
+        
+        .returned {
+            background-color: rgba(246, 194, 62, 0.1);
+        }
+        
+        .low-stock {
+            background-color: rgba(246, 194, 62, 0.1);
+        }
+        
+        .table th {
+            font-weight: 600;
+        }
+        
+        .btn-primary {
+            background-color: var(--primary);
+            border-color: var(--primary);
+        }
+        
+        .btn-primary:hover {
+            background-color: #3a5fce;
+            border-color: #3a5fce;
+        }
+    </style>
+</head>
+<body>
+    <div class="container-fluid">
+        <div class="row">
+            <!-- Sidebar -->
+            <div class="col-md-3 col-lg-2 sidebar px-0 d-md-block collapse">
+                <div class="text-center p-4">
+                    <h4>সুজন স্কয়ার</h4>
+                    <p class="text-white-50 small">বদরগাছি, নওগাঁ</p>
+                </div>
+                <hr class="my-2">
+                <ul class="nav flex-column">
+                    <li class="nav-item">
+                        <a class="nav-link active" href="#dashboard" data-bs-toggle="tab">
+                            <i class="fas fa-tachometer-alt"></i> ড্যাশবোর্ড
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="#products" data-bs-toggle="tab">
+                            <i class="fas fa-box"></i> পণ্য তালিকা
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="#sales" data-bs-toggle="tab">
+                            <i class="fas fa-shopping-cart"></i> বিক্রয়
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="#returns" data-bs-toggle="tab">
+                            <i class="fas fa-undo"></i> ফেরত পণ্য
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="#expired" data-bs-toggle="tab">
+                            <i class="fas fa-calendar-times"></i> এক্সপায়ার্ড পণ্য
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="#settings" data-bs-toggle="tab">
+                            <i class="fas fa-cog"></i> সেটিংস
+                        </a>
+                    </li>
+                </ul>
+                <div class="mt-auto p-3 text-center">
+                    <small class="text-white-50">Powered by Google Sheets</small>
+                </div>
+            </div>
+
+            <!-- Main Content -->
+            <div class="col-md-9 col-lg-10 ml-sm-auto px-0">
+                <!-- Topbar -->
+                <nav class="topbar navbar navbar-expand shadow mb-4">
+                    <div class="container-fluid">
+                        <button class="btn btn-link d-md-none" type="button" data-bs-toggle="collapse" data-bs-target=".sidebar">
+                            <i class="fas fa-bars"></i>
+                        </button>
+                        <ul class="navbar-nav ms-auto">
+                            <li class="nav-item dropdown no-arrow mx-1">
+                                <a class="nav-link dropdown-toggle" href="#" id="alertsDropdown" role="button" data-bs-toggle="dropdown">
+                                    <i class="fas fa-bell fa-fw"></i>
+                                    <span class="badge bg-danger badge-counter">3+</span>
+                                </a>
+                            </li>
+                            <li class="nav-item dropdown no-arrow">
+                                <a class="nav-link dropdown-toggle" href="#" id="userDropdown" role="button" data-bs-toggle="dropdown">
+                                    <span class="d-none d-lg-inline text-gray-600 small">এডমিন</span>
+                                    <img class="img-profile rounded-circle ms-2" width="32" height="32" src="https://via.placeholder.com/32">
+                                </a>
+                            </li>
+                        </ul>
+                    </div>
+                </nav>
+
+                <!-- Tab Content -->
+                <div class="container-fluid tab-content">
+                    <!-- Dashboard Tab -->
+                    <div class="tab-pane fade show active" id="dashboard">
+                        <div class="row">
+                            <div class="col-xl-3 col-md-6 mb-4">
+                                <div class="card border-left-primary shadow h-100 py-2">
+                                    <div class="card-body">
+                                        <div class="row no-gutters align-items-center">
+                                            <div class="col mr-2">
+                                                <div class="text-xs font-weight-bold text-primary text-uppercase mb-1">মোট পণ্য</div>
+                                                <div class="h5 mb-0 font-weight-bold text-gray-800">১৫৬</div>
+                                            </div>
+                                            <div class="col-auto">
+                                                <i class="fas fa-boxes fa-2x text-gray-300"></i>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="col-xl-3 col-md-6 mb-4">
+                                <div class="card border-left-success shadow h-100 py-2">
+                                    <div class="card-body">
+                                        <div class="row no-gutters align-items-center">
+                                            <div class="col mr-2">
+                                                <div class="text-xs font-weight-bold text-success text-uppercase mb-1">আজকের বিক্রয়</div>
+                                                <div class="h5 mb-0 font-weight-bold text-gray-800">৳ ১২,৫০০</div>
+                                            </div>
+                                            <div class="col-auto">
+                                                <i class="fas fa-taka-sign fa-2x text-gray-300"></i>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="col-xl-3 col-md-6 mb-4">
+                                <div class="card border-left-info shadow h-100 py-2">
+                                    <div class="card-body">
+                                        <div class="row no-gutters align-items-center">
+                                            <div class="col mr-2">
+                                                <div class="text-xs font-weight-bold text-info text-uppercase mb-1">ফেরত পণ্য</div>
+                                                <div class="h5 mb-0 font-weight-bold text-gray-800">৮</div>
+                                            </div>
+                                            <div class="col-auto">
+                                                <i class="fas fa-undo fa-2x text-gray-300"></i>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="col-xl-3 col-md-6 mb-4">
+                                <div class="card border-left-warning shadow h-100 py-2">
+                                    <div class="card-body">
+                                        <div class="row no-gutters align-items-center">
+                                            <div class="col mr-2">
+                                                <div class="text-xs font-weight-bold text-warning text-uppercase mb-1">এক্সপায়ার হওয়ার পণ্য</div>
+                                                <div class="h5 mb-0 font-weight-bold text-gray-800">৫</div>
+                                            </div>
+                                            <div class="col-auto">
+                                                <i class="fas fa-exclamation-triangle fa-2x text-gray-300"></i>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="row">
+                            <div class="col-xl-8 col-lg-7">
+                                <div class="card shadow mb-4">
+                                    <div class="card-header py-3 d-flex flex-row align-items-center justify-content-between">
+                                        <h6 class="m-0 font-weight-bold text-primary">সাম্প্রতিক বিক্রয়</h6>
+                                    </div>
+                                    <div class="card-body">
+                                        <div class="table-responsive">
+                                            <table class="table table-bordered" width="100%" cellspacing="0">
+                                                <thead>
+                                                    <tr>
+                                                        <th>পণ্যের নাম</th>
+                                                        <th>দোকান</th>
+                                                        <th>পরিমাণ</th>
+                                                        <th>মূল্য</th>
+                                                        <th>তারিখ</th>
+                                                    </tr>
+                                                </thead>
+                                                <tbody>
+                                                    <tr>
+                                                        <td>প্রাণ পাউরুটি</td>
+                                                        <td>মধ্যপাড়া জেনারেল স্টোর</td>
+                                                        <td>২০ পিস</td>
+                                                        <td>৳ ৪০০</td>
+                                                        <td>২০/০৫/২০২৩</td>
+                                                    </tr>
+                                                    <tr>
+                                                        <td>টiger বিস্কুট</td>
+                                                        <td>নতুন বাজার ক Store</td>
+                                                        <td>৩০ প্যাকেট</td>
+                                                        <td>৳ ৯০০</td>
+                                                        <td>২০/০৫/২০২৩</td>
+                                                    </tr>
+                                                    <tr>
+                                                        <td>ফ্রেশ সেমাই</td>
+                                                        <td>পুরাতন বাজার স্টোর</td>
+                                                        <td>১৫ কেজি</td>
+                                                        <td>৳ ১,২০০</td>
+                                                        <td>১৯/০৫/২০২৩</td>
+                                                    </tr>
+                                                </tbody>
+                                            </table>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="col-xl-4 col-lg-5">
+                                <div class="card shadow mb-4">
+                                    <div class="card-header py-3 d-flex flex-row align-items-center justify-content-between">
+                                        <h6 class="m-0 font-weight-bold text-primary">এক্সপায়ারি সতর্কতা</h6>
+                                    </div>
+                                    <div class="card-body">
+                                        <div class="mt-4">
+                                            <h4 class="small font-weight-bold">প্রাণ পাউরুটি <span class="float-right">৩ দিন বাকি</span></h4>
+                                            <div class="progress mb-4">
+                                                <div class="progress-bar bg-danger" role="progressbar" style="width: 10%"></div>
+                                            </div>
+                                            
+                                            <h4 class="small font-weight-bold">নাগেট বিস্কুট <span class="float-right">৭ দিন বাকি</span></h4>
+                                            <div class="progress mb-4">
+                                                <div class="progress-bar bg-warning" role="progressbar" style="width: 30%"></div>
+                                            </div>
+                                            
+                                            <h4 class="small font-weight-bold">ফ্রেশ সেমাই <span class="float-right">১৫ দিন বাকি</span></h4>
+                                            <div class="progress mb-4">
+                                                <div class="progress-bar bg-info" role="progressbar" style="width: 50%"></div>
+                                            </div>
+                                            
+                                            <h4 class="small font-weight-bold">আফতাব সেমাই <span class="float-right">৩০ দিন বাকি</span></h4>
+                                            <div class="progress mb-4">
+                                                <div class="progress-bar bg-success" role="progressbar" style="width: 80%"></div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Products Tab -->
+                    <div class="tab-pane fade" id="products">
+                        <div class="card shadow mb-4">
+                            <div class="card-header py-3 d-flex justify-content-between align-items-center">
+                                <h6 class="m-0 font-weight-bold text-primary">পণ্য তালিকা</h6>
+                                <button class="btn btn-primary btn-sm" data-bs-toggle="modal" data-bs-target="#addProductModal">
+                                    <i class="fas fa-plus"></i> নতুন পণ্য যোগ করুন
+                                </button>
+                            </div>
+                            <div class="card-body">
+                                <div class="table-responsive">
+                                    <table class="table table-bordered" id="productTable" width="100%" cellspacing="0">
+                                        <thead>
+                                            <tr>
+                                                <th>ছবি</th>
+                                                <th>পণ্যের নাম</th>
+                                                <th>ক্যাটাগরি</th>
+                                                <th>পাইকারি মূল্য</th>
+                                                <th>খুচরা মূল্য</th>
+                                                <th>স্টক</th>
+                                                <th>এক্সপায়ারি তারিখ</th>
+                                                <th>অ্যাকশন</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                            <tr>
+                                                <td><img src="https://via.placeholder.com/60" class="product-image"></td>
+                                                <td>প্রাণ পাউরুটি</td>
+                                                <td>পাউরুটি</td>
+                                                <td>৳ ১৫</td>
+                                                <td>৳ ২০</td>
+                                                <td>১৫০</td>
+                                                <td>২৩/০৫/২০২৩</td>
+                                                <td>
+                                                    <button class="btn btn-info btn-sm"><i class="fas fa-edit"></i></button>
+                                                    <button class="btn btn-danger btn-sm"><i class="fas fa-trash"></i></button>
+                                                </td>
+                                            </tr>
+                                            <tr class="low-stock">
+                                                <td><img src="https://via.placeholder.com/60" class="product-image"></td>
+                                                <td>টাইগার বিস্কুট</td>
+                                                <td>বিস্কুট</td>
+                                                <td>৳ ২৫</td>
+                                                <td>৳ ৩০</td>
+                                                <td>১২</td>
+                                                <td>৩০/০৫/২০২۳</td>
+                                                <td>
+                                                    <button class="btn btn-info btn-sm"><i class="fas fa-edit"></i></button>
+                                                    <button class="btn btn-danger btn-sm"><i class="fas fa-trash"></i></button>
+                                                </td>
+                                            </tr>
+                                            <tr>
+                                                <td><img src="https://via.placeholder.com/60" class="product-image"></td>
+                                                <td>ফ্রেশ সেমাই</td>
+                                                <td>সেমাই</td>
+                                                <td>৳ ৭০</td>
+                                                <td>৳ ৮০</td>
+                                                <td>৮০</td>
+                                                <td>১৫/০৬/২০২৩</td>
+                                                <td>
+                                                    <button class="btn btn-info btn-sm"><i class="fas fa-edit"></i></button>
+                                                    <button class="btn btn-danger btn-sm"><i class="fas fa-trash"></i></button>
+                                                </td>
+                                            </tr>
+                                            <tr class="expired">
+                                                <td><img src="https://via.placeholder.com/60" class="product-image"></td>
+                                                <td>নাগেট বিস্কুট</td>
+                                                <td>বিস্কুট</td>
+                                                <td>৳ ২০</td>
+                                                <td>৳ ২৫</td>
+                                                <td>০</td>
+                                                <td>১০/০৫/২০২৩</td>
+                                                <td>
+                                                    <button class="btn btn-info btn-sm"><i class="fas fa-edit"></i></button>
+                                                    <button class="btn btn-danger btn-sm"><i class="fas fa-trash"></i></button>
+                                                </td>
+                                            </tr>
+                                        </tbody>
+                                    </table>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Sales Tab -->
+                    <div class="tab-pane fade" id="sales">
+                        <div class="card shadow mb-4">
+                            <div class="card-header py-3 d-flex justify-content-between align-items-center">
+                                <h6 class="m-0 font-weight-bold text-primary">বিক্রয় রেকর্ড</h6>
+                                <button class="btn btn-primary btn-sm" data-bs-toggle="modal" data-bs-target="#addSaleModal">
+                                    <i class="fas fa-plus"></i> নতুন বিক্রয় যোগ করুন
+                                </button>
+                            </div>
+                            <div class="card-body">
+                                <div class="table-responsive">
+                                    <table class="table table-bordered" id="salesTable" width="100%" cellspacing="0">
+                                        <thead>
+                                            <tr>
+                                                <th>ইনভয়েস নং</th>
+                                                <th>দোকানের নাম</th>
+                                                <th>পণ্য</th>
+                                                <th>পরিমাণ</th>
+                                                <th>মোট মূল্য</th>
+                                                <th>তারিখ</th>
+                                                <th>অ্যাকশন</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                            <tr>
+                                                <td>INV-001</td>
+                                                <td>মধ্যপাড়া জেনারেল স্টোর</td>
+                                                <td>প্রাণ পাউরুটি</td>
+                                                <td>২০ পিস</td>
+                                                <td>৳ ৪০০</td>
+                                                <td>২০/০৫/২০২৩</td>
+                                                <td>
+                                                    <button class="btn btn-info btn-sm"><i class="fas fa-eye"></i></button>
+                                                    <button class="btn btn-danger btn-sm"><i class="fas fa-trash"></i></button>
+                                                </td>
+                                            </tr>
+                                            <tr>
+                                                <td>INV-002</td>
+                                                <td>নতুন বাজার Store</td>
+                                                <td>টাইগার বিস্কুট</td>
+                                                <td>৩০ প্যাকেট</td>
+                                                <td>৳ ৯০০</td>
+                                                <td>২০/০৫/২০২৩</td>
+                                                <td>
+                                                    <button class="btn btn-info btn-sm"><i class="fas fa-eye"></i></button>
+                                                    <button class="btn btn-danger btn-sm"><i class="fas fa-trash"></i></button>
+                                                </td>
+                                            </tr>
+                                            <tr>
+                                                <td>INV-003</td>
+                                                <td>পুরাতন বাজার স্টোর</td>
+                                                <td>ফ্রেশ সেমাই</td>
+                                                <td>১৫ কেজি</td>
+                                                <td>৳ ১,২০০</td>
+                                                <td>১৯/০৫/২০২৩</td>
+                                                <td>
+                                                    <button class="btn btn-info btn-sm"><i class="fas fa-eye"></i></button>
+                                                    <button class="btn btn-danger btn-sm"><i class="fas fa-trash"></i></button>
+                                                </td>
+                                            </tr>
+                                        </tbody>
+                                    </table>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Other tabs would be implemented similarly -->
+                    <div class="tab-pane fade" id="returns">
+                        <div class="card shadow mb-4">
+                            <div class="card-header py-3">
+                                <h6 class="m-0 font-weight-bold text-primary">ফেরত পণ্য তালিকা</h6>
+                            </div>
+                            <div class="card-body">
+                                <p>ফেরত পাওয়া পণ্যগুলির তালিকা এখানে দেখানো হবে।</p>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="tab-pane fade" id="expired">
+                        <div class="card shadow mb-4">
+                            <div class="card-header py-3">
+                                <h6 class="m-0 font-weight-bold text-primary">এক্সপায়ার্ড পণ্য তালিকা</h6>
+                            </div>
+                            <div class="card-body">
+                                <p>এক্সপায়ারি তারিখ শেষ হয়ে গেছে এমন পণ্যগুলির তালিকা এখানে দেখানো হবে।</p>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="tab-pane fade" id="settings">
+                        <div class="card shadow mb-4">
+                            <div class="card-header py-3">
+                                <h6 class="m-0 font-weight-bold text-primary">সেটিংস</h6>
+                            </div>
+                            <div class="card-body">
+                                <div class="row">
+                                    <div class="col-md-6">
+                                        <h5>গুগল শিট কনফিগারেশন</h5>
+                                        <div class="mb-3">
+                                            <label for="sheetId" class="form-label">শিট আইডি</label>
+                                            <input type="text" class="form-control" id="sheetId" placeholder="Google Sheet ID">
+                                        </div>
+                                        <div class="mb-3">
+                                            <label for="sheetName" class="form-label">শিটের নাম</label>
+                                            <input type="text" class="form-control" id="sheetName" placeholder="Sheet Name">
+                                        </div>
+                                        <button class="btn btn-primary">সংরক্ষণ করুন</button>
+                                    </div>
+                                    <div class="col-md-6">
+                                        <h5>ব্যবসা তথ্য</h5>
+                                        <div class="mb-3">
+                                            <label for="businessName" class="form-label">ব্যবসার নাম</label>
+                                            <input type="text" class="form-control" id="businessName" value="সুজন স্কয়ার">
+                                        </div>
+                                        <div class="mb-3">
+                                            <label for="businessAddress" class="form-label">ঠিকানা</label>
+                                            <input type="text" class="form-control" id="businessAddress" value="বদরগাছি, নওগাঁ">
+                                        </div>
+                                        <button class="btn btn-primary">সংরক্ষণ করুন</button>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Add Product Modal -->
+    <div class="modal fade" id="addProductModal" tabindex="-1" aria-labelledby="addProductModalLabel" aria-hidden="true">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="addProductModalLabel">নতুন পণ্য যোগ করুন</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <form>
+                        <div class="mb-3">
+                            <label for="productName" class="form-label">পণ্যের নাম</label>
+                            <input type="text" class="form-control" id="productName">
+                        </div>
+                        <div class="mb-3">
+                            <label for="productCategory" class="form-label">ক্যাটাগরি</label>
+                            <select class="form-select" id="productCategory">
+                                <option selected>পাউরুটি</option>
+                                <option>বিস্কুট</option>
+                                <option>সেমাই</option>
+                                <option>অন্যান্য</option>
+                            </select>
+                        </div>
+                        <div class="row">
+                            <div class="col-md-6 mb-3">
+                                <label for="wholesalePrice" class="form-label">পাইকারি মূল্য</label>
+                                <input type="number" class="form-control" id="wholesalePrice">
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                <label for="retailPrice" class="form-label">খুচরা মূল্য</label>
+                                <input type="number" class="form-control" id="retailPrice">
+                            </div>
+                        </div>
+                        <div class="mb-3">
+                            <label for="stockQuantity" class="form-label">স্টক পরিমাণ</label>
+                            <input type="number" class="form-control" id="stockQuantity">
+                        </div>
+                        <div class="mb-3">
+                            <label for="expiryDate" class="form-label">এক্সপায়ারি তারিখ</label>
+                            <input type="date" class="form-control" id="expiryDate">
+                        </div>
+                    </form>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">বাতিল</button>
+                    <button type="button" class="btn btn-primary">সংরক্ষণ করুন</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+        // Activate sidebar tabs
+        document.addEventListener('DOMContentLoaded', function() {
+            const triggerTabList = document.querySelectorAll('.nav-link')
+            triggerTabList.forEach(triggerEl => {
+                triggerEl.addEventListener('click', function(event) {
+                    event.preventDefault()
+                    const target = this.getAttribute('href')
+                    const tabPanes = document.querySelectorAll('.tab-pane')
+                    
+                    tabPanes.forEach(pane => {
+                        pane.classList.remove('show', 'active')
+                    })
+                    
+                    document.querySelector(target).classList.add('show', 'active')
+                    
+                    triggerTabList.forEach(link => {
+                        link.classList.remove('active')
+                    })
+                    this.classList.add('active')
+                })
+            })
+            
+            // Simulate loading data
+            console.log("সুজন স্কয়ার ইনভেন্টরি সিস্টেম লোড হচ্ছে...");
+            
+            // This is where you would integrate with Google Sheets API
+            // For a complete implementation, you would need to use:
+            // 1. Google Sheets API client library
+            // 2. OAuth2 authentication
+            // 3. Proper error handling
+        });
+        
+        // Google Sheets integration would be implemented here
+        // This is a simplified example - real implementation requires OAuth and API keys
+        
+        function loadDataFromSheets() {
+            // This function would load data from Google Sheets
+            console.log("গুগল শিট থেকে ডেটা লোড হচ্ছে...");
+            // Actual implementation would use:
+            // gapi.client.sheets.spreadsheets.values.get(...)
+        }
+        
+        function saveDataToSheets() {
+            // This function would save data to Google Sheets
+            console.log("গুগল শিটে ডেটা সংরক্ষণ করা হচ্ছে...");
+            // Actual implementation would use:
+            // gapi.client.sheets.spreadsheets.values.update(...)
+        }
+    </script>
+</body>
+</html>
